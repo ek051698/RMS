@@ -59,9 +59,10 @@ class LiveViewer(multiprocessing.Process):
         super(LiveViewer, self).__init__()
         
         self.config = config
-        self.img_queue = multiprocessing.Queue()
+        manager = multiprocessing.Manager()
+        self.img_queue = manager.Queue()
         self.window_name = window_name
-        self.run_exited = multiprocessing.Event()
+        self.run_exited = manager.Event()
         
         self.imagesprite = ""
 
