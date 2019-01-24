@@ -87,7 +87,13 @@ class LiveViewer(multiprocessing.Process):
             
         """
 
-        self.img_queue.put([img, img_text])
+        ### TEST !!!!
+        #self.img_queue.put([img, img_text])
+
+        # Add none
+        self.img_queue.put([None, img_text])
+
+        ### ###
 
         time.sleep(0.1)
 
@@ -194,7 +200,7 @@ class LiveViewer(multiprocessing.Process):
 
 
         while True:
-            
+
             # Get the next element in the queue (blocking, until next element is available)
             item = self.img_queue.get(block=True)
 
