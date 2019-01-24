@@ -109,58 +109,58 @@ class LiveViewer(multiprocessing.Process):
             return
 
 
-        img, img_text = item
+        # img, img_text = item
 
-        # Convert the image from numpy array to PIL image
-        image = Image.fromarray(np.uint8(img))
-        image = image.convert('RGB')
+        # # Convert the image from numpy array to PIL image
+        # image = Image.fromarray(np.uint8(img))
+        # image = image.convert('RGB')
         
-        # Get screen size
-        screen_w = self.root.winfo_screenwidth()
-        screen_h = self.root.winfo_screenheight()
+        # # Get screen size
+        # screen_w = self.root.winfo_screenwidth()
+        # screen_h = self.root.winfo_screenheight()
         
 
-        # If the screen is smaller than the image, resize the image
-        if (screen_h < img.shape[0]) or (screen_w < img.shape[1]):
+        # # If the screen is smaller than the image, resize the image
+        # if (screen_h < img.shape[0]) or (screen_w < img.shape[1]):
 
-            # Find the ratios between dimentions
-            y_ratio = screen_h/img.shape[0]
-            x_ratio = screen_w/img.shape[1]
+        #     # Find the ratios between dimentions
+        #     y_ratio = screen_h/img.shape[0]
+        #     x_ratio = screen_w/img.shape[1]
 
-            # Resize the image so that the image fits the screen
-            min_ratio = min(x_ratio, y_ratio)
+        #     # Resize the image so that the image fits the screen
+        #     min_ratio = min(x_ratio, y_ratio)
 
-            width_new = int(img.shape[1]*min_ratio)
-            height_new = int(img.shape[0]*min_ratio)
+        #     width_new = int(img.shape[1]*min_ratio)
+        #     height_new = int(img.shape[0]*min_ratio)
 
-            # Set the new window geometry
-            self.root.geometry('{:d}x{:d}'.format(width_new, height_new))
+        #     # Set the new window geometry
+        #     self.root.geometry('{:d}x{:d}'.format(width_new, height_new))
 
-            # Resize the image
-            image = image.resize((width_new, height_new), Image.ANTIALIAS)
+        #     # Resize the image
+        #     image = image.resize((width_new, height_new), Image.ANTIALIAS)
 
 
 
-        # # Write text on the image if any is given
+        # # # Write text on the image if any is given
+        # # if img_text is not None:
+        # #     image = drawText(image, img_text)
+
         # if img_text is not None:
-        #     image = drawText(image, img_text)
-
-        if img_text is not None:
             
-            # Set window title
-            self.root.title('Maxpixel: ' + img_text)
+        #     # Set window title
+        #     self.root.title('Maxpixel: ' + img_text)
 
 
-        # This has to be assigned to 'self', otherwise the data will get garbage collected and not shown
-        #   on the screen
-        self.image_tkphoto = ImageTk.PhotoImage(image)
+        # # This has to be assigned to 'self', otherwise the data will get garbage collected and not shown
+        # #   on the screen
+        # self.image_tkphoto = ImageTk.PhotoImage(image)
 
 
-        # Delete the old image
-        self.canvas.delete(self.imagesprite)
+        # # Delete the old image
+        # self.canvas.delete(self.imagesprite)
 
-        # Create an image window
-        self.imagesprite = self.canvas.create_image(0, 0, image=self.image_tkphoto, anchor='nw')
+        # # Create an image window
+        # self.imagesprite = self.canvas.create_image(0, 0, image=self.image_tkphoto, anchor='nw')
 
         # Repeat the image update
         if not self.run_exited.is_set():
