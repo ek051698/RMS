@@ -4,9 +4,13 @@
 
 from __future__ import print_function, division, absolute_import
 
-import numpy as np
 import time
+import gc
 import multiprocessing
+
+
+import numpy as np
+
 
 from PIL import Image
 from PIL import ImageTk
@@ -18,13 +22,6 @@ try:
     import tkinter
 except:
     import Tkinter as tkinter
-
-
-try:
-    from mem_top import mem_top
-    USE_MEMTOP = True
-except:
-    USE_MEMTOP = False
 
 
 def drawText(img, img_text):
@@ -98,6 +95,9 @@ class LiveViewer(multiprocessing.Process):
 
     def getImage(self):
 
+        # Collect garbage
+        gc.collect()
+
         # Get the next element in the queue (blocking, until next element is available)
         item = self.img_queue.get(block=True)
 
@@ -147,13 +147,6 @@ class LiveViewer(multiprocessing.Process):
         # This has to be assigned to 'self', otherwise the data will get garbage collected and not shown
         #   on the screen
         self.image_tkphoto = ImageTk.PhotoImage(image)
-
-
-
-
-        # Log memory
-        if USE_MEMTOP:
-            print(mem_top())
 
 
         # Delete the old image
