@@ -153,7 +153,7 @@ class LiveViewer(multiprocessing.Process):
 
         # Log memory
         if USE_MEMTOP:
-            log.debug(mem_top())
+            print(mem_top())
 
 
         # Delete the old image
