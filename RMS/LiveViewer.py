@@ -139,9 +139,14 @@ class LiveViewer(multiprocessing.Process):
 
 
 
-        # Write text on the image if any is given
+        # # Write text on the image if any is given
+        # if img_text is not None:
+        #     image = drawText(image, img_text)
+
         if img_text is not None:
-            image = drawText(image, img_text)
+            
+            # Set window title
+            self.root.title('Maxpixel: ' + img_text)
 
 
         # This has to be assigned to 'self', otherwise the data will get garbage collected and not shown
