@@ -4,12 +4,12 @@
 
 from __future__ import print_function, division, absolute_import
 
-import cv2
 import numpy as np
 import time
 import multiprocessing
 
 from PIL import Image
+from PIL import ImageTk
 from PIL import ImageFont
 from PIL import ImageDraw
 
@@ -20,38 +20,32 @@ except:
     import Tkinter as tkinter
 
 
-def drawText(ff_array, img_text):
+def drawText(img, img_text):
     """ Draws text on the image represented as a numpy array.
 
     """
 
-    # Convert the array to PIL image
-    im = Image.fromarray(np.uint8(ff_array))
-    im = im.convert('RGB')
-    draw = ImageDraw.Draw(im)
+    # Construct a PIL draw object
+    draw = ImageDraw.Draw(img)
 
     # Load the default font
     font = ImageFont.load_default()
 
     # Draw the text on the image, in the upper left corent
     draw.text((0, 0), img_text, (255,255,0), font=font)
-    draw = ImageDraw.Draw(im)
+    draw = ImageDraw.Draw(img)
 
     # Convert the type of the image to grayscale, with one color
-    try:
-        if len(ff_array[0][0]) != 3:
-            im = im.convert('L')
-    except:
-        im = im.convert('L')
+    img = img.convert('L')
 
-    return np.array(im)
+    return img
 
 
 
 class LiveViewer(multiprocessing.Process):
     """ Uses OpenCV to show an image, which can be updated from another thread. """
 
-    def __init__(self, window_name=None):
+    def __init__(self, config, window_name=None):
         """
         Keyword arguments:
             window_name: [str] name (title) of the window
@@ -60,10 +54,14 @@ class LiveViewer(multiprocessing.Process):
 
         super(LiveViewer, self).__init__()
         
+        self.config = config
         self.img_queue = multiprocessing.Queue()
         self.window_name = window_name
-        self.first_image = True
         self.run_exited = multiprocessing.Event()
+        
+        self.imagesprite = ""
+
+
 
         self.start()
 
@@ -91,70 +89,105 @@ class LiveViewer(multiprocessing.Process):
         time.sleep(0.1)
 
 
+    def getImage(self):
+
+        # Get the next element in the queue (blocking, until next element is available)
+        item = self.img_queue.get(block=True)
+
+        # If the 'poison pill' is received, exit the viewer
+        if item is None:
+            self.run_exited.set()
+            return
+
+
+        img, img_text = item
+
+        # Convert the image from numpy array to PIL image
+        image = Image.fromarray(np.uint8(img))
+        image = image.convert('RGB')
+        
+        # Get screen size
+        screen_w = self.root.winfo_screenwidth()
+        screen_h = self.root.winfo_screenheight()
+        
+
+        # If the screen is smaller than the image, resize the image
+        if (screen_h < img.shape[0]) or (screen_w < img.shape[1]):
+
+            # Find the ratios between dimentions
+            y_ratio = screen_h/img.shape[0]
+            x_ratio = screen_w/img.shape[1]
+
+            # Resize the image so that the image fits the screen
+            min_ratio = min(x_ratio, y_ratio)
+
+            width_new = int(img.shape[1]*min_ratio)
+            height_new = int(img.shape[0]*min_ratio)
+
+            # Set the new window geometry
+            self.root.geometry('{:d}x{:d}'.format(width_new, height_new))
+
+            # Resize the image
+            image = image.resize((width_new, height_new), Image.ANTIALIAS)
+
+
+
+        # Write text on the image if any is given
+        if img_text is not None:
+            image = drawText(image, img_text)
+
+
+        # This has to be assigned to 'self', otherwise the data will get garbage collected and not shown
+        #   on the screen
+        self.image_tkphoto = ImageTk.PhotoImage(image)
+
+
+        # Delete the old image
+        self.canvas.delete(self.imagesprite)
+
+        # Create an image window
+        self.imagesprite = self.canvas.create_image(0, 0, image=self.image_tkphoto, anchor='nw')
+
+        # Repeat the image update
+        if not self.run_exited.is_set():
+            self.canvas.after(100, self.getImage)
+
+
 
     def run(self):
         """ Keep updating the image on the screen from the queue. """
 
 
-        # Repeat until the live viewer is not stopped from the outside
-        while True:
+        # Init the window
+        self.root = tkinter.Tk()
 
-            # Get the next element in the queue (blocking, until next element is available)
-            item = self.img_queue.get(block=True)
+        # Position window in the upper left corner
+        self.root.geometry('+0+0')
 
-            # If the 'poison pill' is received, exit the viewer
-            if item is None:
-                self.run_exited.set()
-                return
+        # Set window title
+        self.root.title('Maxpixel')
 
+        # Disable closing the window
+        self.root.protocol("WM_DELETE_WINDOW", lambda: None)
 
-            img, img_text = item
+        self.canvas = tkinter.Canvas(self.root, width=self.config.width, height=self.config.height)
+        self.canvas.pack()
+        self.canvas.configure(background='black')
 
+        self.getImage()
 
-            # Find the screen size
-            root = tkinter.Tk()
-            root.withdraw()
-
-            screen_w = root.winfo_screenwidth()
-            screen_h = root.winfo_screenheight()
-
-            root.destroy()
-            del root
-
-            # If the screen is smaller than the image, resize the image
-            if (screen_h < img.shape[0]) or (screen_w < img.shape[1]):
-
-                # Find the ratios between dimentions
-                y_ratio = screen_h/img.shape[0]
-                x_ratio = screen_w/img.shape[1]
-
-                # Resize the image so that the image fits the screen
-                min_ratio = min(x_ratio, y_ratio)
-
-                width_new = int(img.shape[1]*min_ratio)
-                height_new = int(img.shape[0]*min_ratio)
-
-                img = cv2.resize(img, (width_new, height_new))
+        self.root.mainloop()
 
 
-
-            # Write text on the image if any is given
-            if img_text is not None:
-                img = drawText(img, img_text)
+        # while not self.run_exited.is_set():
+        #     time.sleep(0.1)
 
 
-            # Update the image on the screen
-            cv2.imshow(self.window_name, img)
-
-            # If this is the first image, move it to the upper left corner
-            if self.first_image:
-                
-                cv2.moveWindow(self.window_name, 0, 0)
-
-                self.first_image = False
-
-
-            cv2.waitKey(100)
+        # Close the window
+        if self.root is not None:
+            self.root.withdraw()
+            self.root.destroy()
+            del self.root
 
 
 
@@ -163,8 +196,6 @@ class LiveViewer(multiprocessing.Process):
 
         self.terminate()
 
-        cv2.destroyAllWindows()
-
         self.join()
 
 
@@ -172,17 +203,26 @@ class LiveViewer(multiprocessing.Process):
 
 if __name__ == "__main__":
 
+    import RMS.ConfigReader as cr
+
     ### Test the live viewer ###
 
+    # Load the default configuration file
+    config = cr.parse(".config")
+
+    # Test resizing
+    config.width = 2000
+    config.height = 2000
+
     # Start the viewer
-    live_view = LiveViewer(window_name='Maxpixel')
+    live_view = LiveViewer(config, window_name='Maxpixel')
 
     # Generate an example image
-    img = np.zeros((500, 500))
+    img = np.zeros((config.height, config.width))
 
-    for i in range(50):
+    for i in range(100):
         i = i*3
-        img[i, i] = 128
+        img[i:i+2, i:i+2] = 255
         live_view.updateImage(img, str(i))
         time.sleep(0.1)
 
