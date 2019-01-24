@@ -5,7 +5,6 @@
 from __future__ import print_function, division, absolute_import
 
 import time
-import gc
 import multiprocessing
 
 
@@ -59,10 +58,9 @@ class LiveViewer(multiprocessing.Process):
         super(LiveViewer, self).__init__()
         
         self.config = config
-        manager = multiprocessing.Manager()
-        self.img_queue = manager.Queue()
+        self.img_queue = multiprocessing.Queue()
         self.window_name = window_name
-        self.run_exited = manager.Event()
+        self.run_exited = multiprocessing.Event()
         
         self.imagesprite = ""
 
@@ -96,9 +94,6 @@ class LiveViewer(multiprocessing.Process):
 
     def getImage(self):
 
-        # Collect garbage
-        gc.collect()
-
         # Get the next element in the queue (blocking, until next element is available)
         item = self.img_queue.get(block=True)
 
@@ -110,58 +105,58 @@ class LiveViewer(multiprocessing.Process):
             return
 
 
-        # img, img_text = item
+        img, img_text = item
 
-        # # Convert the image from numpy array to PIL image
-        # image = Image.fromarray(np.uint8(img))
-        # image = image.convert('RGB')
+        # Convert the image from numpy array to PIL image
+        image = Image.fromarray(np.uint8(img))
+        image = image.convert('RGB')
         
-        # # Get screen size
-        # screen_w = self.root.winfo_screenwidth()
-        # screen_h = self.root.winfo_screenheight()
+        # Get screen size
+        screen_w = self.root.winfo_screenwidth()
+        screen_h = self.root.winfo_screenheight()
         
 
-        # # If the screen is smaller than the image, resize the image
-        # if (screen_h < img.shape[0]) or (screen_w < img.shape[1]):
+        # If the screen is smaller than the image, resize the image
+        if (screen_h < img.shape[0]) or (screen_w < img.shape[1]):
 
-        #     # Find the ratios between dimentions
-        #     y_ratio = screen_h/img.shape[0]
-        #     x_ratio = screen_w/img.shape[1]
+            # Find the ratios between dimentions
+            y_ratio = screen_h/img.shape[0]
+            x_ratio = screen_w/img.shape[1]
 
-        #     # Resize the image so that the image fits the screen
-        #     min_ratio = min(x_ratio, y_ratio)
+            # Resize the image so that the image fits the screen
+            min_ratio = min(x_ratio, y_ratio)
 
-        #     width_new = int(img.shape[1]*min_ratio)
-        #     height_new = int(img.shape[0]*min_ratio)
+            width_new = int(img.shape[1]*min_ratio)
+            height_new = int(img.shape[0]*min_ratio)
 
-        #     # Set the new window geometry
-        #     self.root.geometry('{:d}x{:d}'.format(width_new, height_new))
+            # Set the new window geometry
+            self.root.geometry('{:d}x{:d}'.format(width_new, height_new))
 
-        #     # Resize the image
-        #     image = image.resize((width_new, height_new), Image.ANTIALIAS)
+            # Resize the image
+            image = image.resize((width_new, height_new), Image.ANTIALIAS)
 
 
 
-        # # # Write text on the image if any is given
-        # # if img_text is not None:
-        # #     image = drawText(image, img_text)
-
+        # # Write text on the image if any is given
         # if img_text is not None:
+        #     image = drawText(image, img_text)
+
+        if img_text is not None:
             
-        #     # Set window title
-        #     self.root.title('Maxpixel: ' + img_text)
+            # Set window title
+            self.root.title('Maxpixel: ' + img_text)
 
 
-        # # This has to be assigned to 'self', otherwise the data will get garbage collected and not shown
-        # #   on the screen
-        # self.image_tkphoto = ImageTk.PhotoImage(image)
+        # This has to be assigned to 'self', otherwise the data will get garbage collected and not shown
+        #   on the screen
+        self.image_tkphoto = ImageTk.PhotoImage(image)
 
 
-        # # Delete the old image
-        # self.canvas.delete(self.imagesprite)
+        # Delete the old image
+        self.canvas.delete(self.imagesprite)
 
-        # # Create an image window
-        # self.imagesprite = self.canvas.create_image(0, 0, image=self.image_tkphoto, anchor='nw')
+        # Create an image window
+        self.imagesprite = self.canvas.create_image(0, 0, image=self.image_tkphoto, anchor='nw')
 
         # Repeat the image update
         if not self.run_exited.is_set():
@@ -173,29 +168,42 @@ class LiveViewer(multiprocessing.Process):
         """ Keep updating the image on the screen from the queue. """
 
 
-        # Init the window
-        self.root = tkinter.Tk()
+        # # Init the window
+        # self.root = tkinter.Tk()
 
-        # Position window in the upper left corner
-        self.root.geometry('+0+0')
+        # # Position window in the upper left corner
+        # self.root.geometry('+0+0')
 
-        # Set window title
-        self.root.title('Maxpixel')
+        # # Set window title
+        # self.root.title('Maxpixel')
 
-        # Disable closing the window
-        self.root.protocol("WM_DELETE_WINDOW", lambda: None)
+        # # Disable closing the window
+        # self.root.protocol("WM_DELETE_WINDOW", lambda: None)
 
-        self.canvas = tkinter.Canvas(self.root, width=self.config.width, height=self.config.height)
-        self.canvas.pack()
-        self.canvas.configure(background='black')
+        # self.canvas = tkinter.Canvas(self.root, width=self.config.width, height=self.config.height)
+        # self.canvas.pack()
+        # self.canvas.configure(background='black')
 
-        self.getImage()
+        # self.getImage()
 
-        self.root.mainloop()
+        # self.root.mainloop()
 
 
         # while not self.run_exited.is_set():
         #     time.sleep(0.1)
+
+
+        while True:
+            
+            # Get the next element in the queue (blocking, until next element is available)
+            item = self.img_queue.get(block=True)
+
+            print('Image queue size:', self.img_queue.qsize())
+
+            # If the 'poison pill' is received, exit the viewer
+            if item is None:
+                self.run_exited.set()
+                return
 
 
         # Close the window
