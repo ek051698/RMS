@@ -151,6 +151,7 @@ class LiveViewer(multiprocessing.Process):
 
         # This has to be assigned to 'self', otherwise the data will get garbage collected and not shown
         #   on the screen
+        del self.image_tkphoto
         self.image_tkphoto = ImageTk.PhotoImage(image)
 
 
