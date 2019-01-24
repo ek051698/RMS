@@ -20,6 +20,13 @@ except:
     import Tkinter as tkinter
 
 
+try:
+    from mem_top import mem_top
+    USE_MEMTOP = True
+except:
+    USE_MEMTOP = False
+
+
 def drawText(img, img_text):
     """ Draws text on the image represented as a numpy array.
 
@@ -140,6 +147,13 @@ class LiveViewer(multiprocessing.Process):
         # This has to be assigned to 'self', otherwise the data will get garbage collected and not shown
         #   on the screen
         self.image_tkphoto = ImageTk.PhotoImage(image)
+
+
+
+
+        # Log memory
+        if USE_MEMTOP:
+            log.debug(mem_top())
 
 
         # Delete the old image
