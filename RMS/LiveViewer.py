@@ -35,8 +35,8 @@ def drawText(img, img_text):
     draw.text((0, 0), img_text, (255,255,0), font=font)
     draw = ImageDraw.Draw(img)
 
-    # Convert the type of the image to grayscale, with one color
-    img = img.convert('L')
+    # # Convert the type of the image to grayscale, with one color
+    # img = img.convert('L')
 
     return img
 
