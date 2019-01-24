@@ -101,6 +101,8 @@ class LiveViewer(multiprocessing.Process):
         # Get the next element in the queue (blocking, until next element is available)
         item = self.img_queue.get(block=True)
 
+        print('Image queue size:', self.img_queue.qsize())
+
         # If the 'poison pill' is received, exit the viewer
         if item is None:
             self.run_exited.set()
