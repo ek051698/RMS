@@ -31,8 +31,8 @@ def drawText(img, img_text):
     # Load the default font
     font = ImageFont.load_default()
 
-    # Draw the text on the image, in the upper left corent
-    draw.text((0, 0), img_text, (255,255,0), font=font)
+    # Draw the text on the image, in the upper left corner (green text)
+    draw.text((0, 0), img_text, (0,155,62), font=font)
     draw = ImageDraw.Draw(img)
 
     # # Convert the type of the image to grayscale, with one color
