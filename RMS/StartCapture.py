@@ -230,7 +230,7 @@ def runCapture(config, duration=None, video_file=None, nodetect=False, detect_en
     # Initialize the live image viewer
     if config.live_view_enable:
 
-        live_view = LiveViewer(window_name='Maxpixel')
+        live_view = LiveViewer(config, window_name='Maxpixel')
 
     else:
     
